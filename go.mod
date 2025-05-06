@@ -3,7 +3,7 @@ module github.com/chn555/blackjack
 go 1.24.2
 
 require (
-	github.com/chn555/schemas v0.0.0-20250506092008-8c19b3a5ff86
+	github.com/chn555/schemas v0.0.0-20250506153851-4da0ac0fc884
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.2
 	google.golang.org/grpc v1.72.0

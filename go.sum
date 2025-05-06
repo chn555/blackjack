@@ -1,5 +1,7 @@
 github.com/chn555/schemas v0.0.0-20250506092008-8c19b3a5ff86 h1:MNCQntlSk876k4MJsATlOCMyeFwA//whn9dxVNMDXIQ=
 github.com/chn555/schemas v0.0.0-20250506092008-8c19b3a5ff86/go.mod h1:gLCQty4N1cNnq+jK855FEords2f16Xx4lNdBaqtGJ0E=
+github.com/chn555/schemas v0.0.0-20250506153851-4da0ac0fc884 h1:YsKztwLCJrD++z7u5OIfu0hvGODpp6D7P12PQUUGM28=
+github.com/chn555/schemas v0.0.0-20250506153851-4da0ac0fc884/go.mod h1:gLCQty4N1cNnq+jK855FEords2f16Xx4lNdBaqtGJ0E=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
