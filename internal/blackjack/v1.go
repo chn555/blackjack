@@ -5,25 +5,29 @@ import (
 	"fmt"
 
 	"github.com/chn555/blackjack/pkg/blackjack"
+	aiPb "github.com/chn555/schemas/proto/ai/v1"
 	blackjackPb "github.com/chn555/schemas/proto/blackjack/v1"
 	deckPb "github.com/chn555/schemas/proto/deck/v1"
-	"github.com/google/uuid"
 )
 
 type ServiceServer struct {
 	blackjackPb.UnimplementedBlackjackServiceServer
 	deckClient deckPb.DeckServiceClient
+	aiClient   aiPb.AiServiceClient
 	store      blackjack.GameStore
 }
 
-func NewServiceServer(store blackjack.GameStore, deckClient deckPb.DeckServiceClient) (*ServiceServer, error) {
+func NewServiceServer(store blackjack.GameStore, deckClient deckPb.DeckServiceClient, aiClient aiPb.AiServiceClient) (*ServiceServer, error) {
 	if store == nil {
 		return nil, fmt.Errorf("store is nil")
 	}
 	if deckClient == nil {
 		return nil, fmt.Errorf("deck client is nil")
 	}
-	return &ServiceServer{store: store, deckClient: deckClient}, nil
+	if aiClient == nil {
+		return nil, fmt.Errorf("ai client is nil")
+	}
+	return &ServiceServer{store: store, deckClient: deckClient, aiClient: aiClient}, nil
 }
 
 func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGameRequest) (*blackjackPb.Game, error) {
@@ -31,7 +35,7 @@ func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGam
 		return nil, fmt.Errorf("no player names provided")
 	}
 
-	game, err := blackjack.NewGame(ctx, s.deckClient)
+	game, err := blackjack.NewGame(ctx, s.deckClient, s.aiClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create game: %w", err)
 	}
@@ -41,14 +45,12 @@ func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGam
 		return nil, fmt.Errorf("failed to start game: %w", err)
 	}
 
-	gameID := uuid.New().String()
-	err = s.store.Put(ctx, gameID, game)
+	err = s.store.Put(ctx, game.ID, game)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store game: %w", err)
 	}
 
 	protoGame := gameToProto(game)
-	protoGame.GameId = gameID
 	hideHandForPlayer(protoGame, "")
 	return protoGame, nil
 }
@@ -56,6 +58,7 @@ func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGam
 // map game to proto
 func gameToProto(game *blackjack.Game) *blackjackPb.Game {
 	return &blackjackPb.Game{
+		GameId:      game.ID,
 		NextPlayer:  game.NextPlayer,
 		Winner:      game.Winner,
 		Status:      mapGameStatusToProto(game.Status),
@@ -114,13 +117,12 @@ func (s *ServiceServer) PlayTurn(ctx context.Context, req *blackjackPb.Turn) (*b
 	)
 	err = game.PlayTurn(ctx, turn)
 
-	err = s.store.Put(ctx, req.GetGameId(), game)
+	err = s.store.Put(ctx, game.ID, game)
 	if err != nil {
 		return nil, fmt.Errorf("failed to store game: %w", err)
 	}
 
 	protoGame := gameToProto(game)
-	protoGame.GameId = req.GetGameId()
 	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
@@ -143,7 +145,6 @@ func (s *ServiceServer) GetGame(ctx context.Context, req *blackjackPb.GetGameReq
 	}
 
 	protoGame := gameToProto(game)
-	protoGame.GameId = req.GetGameId()
 	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
