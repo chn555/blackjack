@@ -70,10 +70,6 @@ func (g *Game) PlayTurn(ctx context.Context, turn *Turn) error {
 	}
 
 	g.NextPlayer = g.getNextPlayer(playerName)
-	if g.NextPlayer == DealerName {
-		return g.playDealerHand(ctx)
-	}
-
 	return nil
 }
 

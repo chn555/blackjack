@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	aiPb "github.com/chn555/schemas/proto/ai/v1"
 	deckPb "github.com/chn555/schemas/proto/deck/v1"
+	"github.com/google/uuid"
 )
 
 // GameStatus represents the current state of the game
@@ -20,6 +22,7 @@ const (
 // Game represents the lifecycle of a blackjack game
 // It is not thread-safe and should be used in a single-threaded context
 type Game struct {
+	ID     string
 	Status GameStatus
 
 	Players     map[string]*Player
@@ -29,15 +32,20 @@ type Game struct {
 	Winner string
 
 	deckClient deckPb.DeckServiceClient
+	aiClient   aiPb.AiServiceClient
 	DeckID     string
 }
 
 const DealerName = "Dealer"
 
 // NewGame creates a game, call Game.Start to start the game
-func NewGame(ctx context.Context, deckClient deckPb.DeckServiceClient) (*Game, error) {
+func NewGame(ctx context.Context, deckClient deckPb.DeckServiceClient, aiClient aiPb.AiServiceClient) (*Game, error) {
 	if deckClient == nil {
 		return nil, fmt.Errorf("deck client is nil")
+	}
+
+	if aiClient == nil {
+		return nil, fmt.Errorf("ai client is nil")
 	}
 
 	deckID, err := generateDeck(ctx, deckClient)
@@ -46,7 +54,9 @@ func NewGame(ctx context.Context, deckClient deckPb.DeckServiceClient) (*Game, e
 	}
 
 	return &Game{
+		ID:          uuid.New().String(),
 		deckClient:  deckClient,
+		aiClient:    aiClient,
 		DeckID:      deckID,
 		Status:      WaitingToStart,
 		Players:     map[string]*Player{},
@@ -78,10 +88,20 @@ func (g *Game) Start(ctx context.Context, players ...string) error {
 		return fmt.Errorf("failed to create players: %w", err)
 	}
 
+	_, err = g.aiClient.PlayGame(ctx, &aiPb.PlayGameRequest{
+		GameId:     g.ID,
+		PlayerName: DealerName,
+		Strategy:   "dealer",
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to start dealer game: %w", err)
+	}
+
 	g.Status = WaitingForPlayer
 	g.NextPlayer = g.playerOrder[0]
 
-	return g.playDealerHand(ctx)
+	return nil
 }
 
 func (g *Game) createPlayers(ctx context.Context, players []string) error {
