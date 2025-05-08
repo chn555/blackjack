@@ -74,6 +74,23 @@ func (g *Game) PlayTurn(ctx context.Context, turn *Turn) error {
 	}
 
 	g.NextPlayer = g.getNextPlayer(playerName)
+	if g.NextPlayer == DealerName {
+		err := g.handleDealerTurn(ctx, err, playerName)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (g *Game) handleDealerTurn(ctx context.Context, err error, playerName string) error {
+	dealerTurn := NewTurn(Stand, DealerName)
+	err = g.PlayTurn(ctx, dealerTurn)
+	if err != nil {
+		return fmt.Errorf("failed to play dealer turn: %w", err)
+	}
+	g.NextPlayer = g.getNextPlayer(playerName)
 	return nil
 }
 
