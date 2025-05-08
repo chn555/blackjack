@@ -10,5 +10,6 @@ A Player represents a player in the game, consisting of the player's hand, their
 A Game represents the state of the game, including the players, their order, and the current status of the game.
 
 When a game is created, the dealer is always the first player.
+The game starts with the dealer and players being dealt two cards each.
 */
 package blackjack
