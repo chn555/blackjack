@@ -16,5 +16,7 @@ To progress the game each player in turn can choose to hit or stand.
 To play a turn, call the PlayTurn method on the game.
 After a turn has been played, the game state is updated and the Game.NextPlayer is updated.
 The dealer always stands.
+
+This package also provides in interface for storing and retrieving game state, and a simple in-memory implementation.
 */
 package blackjack
