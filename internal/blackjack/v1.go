@@ -56,6 +56,10 @@ func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGam
 	}
 
 	protoGame := gameToProto(game)
+
+	// Since we do not know which player sent the request,
+	// we hide all player hands in the response.
+	hideHandForPlayer(protoGame, "")
 	return protoGame, nil
 }
 
@@ -94,6 +98,21 @@ func mapGameStatusToProto(status blackjack.GameStatus) blackjackPb.Game_GAME_STA
 	}
 }
 
+// hideHandForPlayer hides the hands of all players except the one specified.
+func hideHandForPlayer(game *blackjackPb.Game, playerName string) {
+	for name, player := range game.PlayerHands {
+		if name == blackjack.DealerName {
+			player.Cards = player.Cards[:1]
+			player.Score = 0
+			continue
+		}
+		if name != playerName {
+			player.Cards = nil
+			player.Score = 0
+		}
+	}
+}
+
 // PlayTurn plays a turn in the game.
 func (s *ServiceServer) PlayTurn(ctx context.Context, req *blackjackPb.Turn) (*blackjackPb.Game, error) {
 	game, err := s.store.Get(ctx, req.GetGameId())
@@ -116,6 +135,7 @@ func (s *ServiceServer) PlayTurn(ctx context.Context, req *blackjackPb.Turn) (*b
 	}
 
 	protoGame := gameToProto(game)
+	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
 
@@ -139,5 +159,6 @@ func (s *ServiceServer) GetGame(ctx context.Context, req *blackjackPb.GetGameReq
 	}
 
 	protoGame := gameToProto(game)
+	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
