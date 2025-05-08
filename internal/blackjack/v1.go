@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/chn555/blackjack/pkg/blackjack"
-	aiPb "github.com/chn555/schemas/proto/ai/v1"
 	blackjackPb "github.com/chn555/schemas/proto/blackjack/v1"
 	deckPb "github.com/chn555/schemas/proto/deck/v1"
 )
@@ -16,16 +15,14 @@ type ServiceServer struct {
 	store      blackjack.GameStore
 }
 
-func NewServiceServer(store blackjack.GameStore, deckClient deckPb.DeckServiceClient, aiClient aiPb.AiServiceClient) (*ServiceServer, error) {
+func NewServiceServer(store blackjack.GameStore, deckClient deckPb.DeckServiceClient) (*ServiceServer, error) {
 	if store == nil {
 		return nil, fmt.Errorf("store is nil")
 	}
 	if deckClient == nil {
 		return nil, fmt.Errorf("deck client is nil")
 	}
-	if aiClient == nil {
-		return nil, fmt.Errorf("ai client is nil")
-	}
+
 	return &ServiceServer{store: store, deckClient: deckClient}, nil
 }
 
@@ -50,6 +47,7 @@ func (s *ServiceServer) NewGame(ctx context.Context, request *blackjackPb.NewGam
 	}
 
 	protoGame := gameToProto(game)
+	hideHandForPlayer(protoGame, "")
 	return protoGame, nil
 }
 
@@ -89,6 +87,20 @@ func mapGameStatusToProto(status blackjack.GameStatus) blackjackPb.Game_GAME_STA
 	}
 }
 
+func hideHandForPlayer(game *blackjackPb.Game, playerName string) {
+	for name, player := range game.PlayerHands {
+		if name == blackjack.DealerName {
+			player.Cards = player.Cards[:1]
+			player.Score = 0
+			continue
+		}
+		if name != playerName {
+			player.Cards = nil
+			player.Score = 0
+		}
+	}
+}
+
 func (s *ServiceServer) PlayTurn(ctx context.Context, req *blackjackPb.Turn) (*blackjackPb.Game, error) {
 	game, err := s.store.Get(ctx, req.GetGameId())
 	if err != nil {
@@ -110,6 +122,7 @@ func (s *ServiceServer) PlayTurn(ctx context.Context, req *blackjackPb.Turn) (*b
 	}
 
 	protoGame := gameToProto(game)
+	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
 
@@ -131,5 +144,6 @@ func (s *ServiceServer) GetGame(ctx context.Context, req *blackjackPb.GetGameReq
 	}
 
 	protoGame := gameToProto(game)
+	hideHandForPlayer(protoGame, req.GetPlayerName())
 	return protoGame, nil
 }
